@@ -32,21 +32,24 @@
           <div id="totalExpense" class="card-value">Rp0</div>
         </div>
         <div class="card highlight">
-          <div class="card-title">Sumber Terbesar (bulan ini)</div>
+          <div class="card-title">Sumber Terbesar (filter aktif)</div>
           <div id="topSource" class="card-value">—</div>
         </div>
       </div>
 
-            <h3>Ringkasan per Sumber</h3>
+      <h3>Ringkasan per Sumber</h3>
 
-      <div class="chart-wrap" style="margin:12px 0 6px">
-        <canvas id="sourceChart" width="400" height="180"></canvas>
+      <div class="chart-controls" style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+        <label style="font-size:13px;color:var(--muted)">Filter bulan</label>
+        <input id="filterMonth" type="month" />
+        <button id="clearFilter" class="muted btn-sm" type="button">Reset</button>
       </div>
 
-      <ul id="sourceList" class="source-list">
-        <!-- dinamisk -->
-      </ul>
+      <div class="chart-wrap" style="height:220px;margin:6px 0 12px">
+        <canvas id="sourceChart"></canvas>
+      </div>
 
+      <ul id="sourceList" class="source-list"></ul>
     </section>
 
     <!-- Right: Form + Transactions -->
@@ -101,9 +104,7 @@
               <th>Tanggal</th><th>Type</th><th>Sumber/Kategori</th><th>Catatan</th><th>Jumlah (Rp)</th><th></th>
             </tr>
           </thead>
-          <tbody>
-            <!-- dinamis -->
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
     </section>
@@ -114,6 +115,7 @@
       <small>MyFinance • Built for you — tampil lokal, simpan di browser</small>
     </div>
   </footer>
+
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>

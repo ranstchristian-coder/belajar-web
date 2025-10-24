@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js integration
+// Personal Finance Manager + Chart.js with colored bars + month filter
 
 const KEY = 'myfinance_tx_v1';
 
@@ -10,6 +10,15 @@ const SOURCES = {
   jual_beli_tbs: 'Jual Beli TBS (Ramp)',
   jaringan_wifi: 'Jaringan Wifi',
   lainnya: 'Lainnya'
+};
+
+// colors per source (consistent)
+const COLORS = {
+  toko_sembako: '#FF8A65',   // orange
+  kebun_sawit:  '#66BB6A',   // green
+  jual_beli_tbs: '#42A5F5',  // blue
+  jaringan_wifi:'#AB47BC',   // purple
+  lainnya:      '#90A4AE'    // grey
 };
 
 let txs = []; // array transaksi
@@ -33,13 +42,24 @@ function save(){
   localStorage.setItem(KEY, JSON.stringify(txs));
 }
 
-// calculate totals
-function calcTotals(){
+// apply month filter: returns filtered tx array
+function applyMonthFilter(allTx){
+  const monthVal = qs('#filterMonth').value; // format "YYYY-MM" or ""
+  if(!monthVal) return allTx.slice(); // no filter
+  return allTx.filter(t => {
+    // ensure date in YYYY-MM-DD
+    const d = (t.date || '').slice(0,7);
+    return d === monthVal;
+  });
+}
+
+// calculate totals from an array of transactions
+function calcTotalsFromArray(arr){
   let totalIncome = 0, totalExpense = 0;
   const perSource = {};
   Object.keys(SOURCES).forEach(k => perSource[k] = 0);
 
-  txs.forEach(t=>{
+  arr.forEach(t=>{
     const amt = Number(t.amount) || 0;
     if(t.type === 'income'){
       totalIncome += amt;
@@ -56,20 +76,18 @@ function calcTotals(){
 
 // Chart: create or update
 function renderChart(perSource){
-  // prepare labels and data (only income sources)
   const labels = Object.keys(SOURCES).map(k => SOURCES[k]);
   const data = Object.keys(SOURCES).map(k => perSource[k] || 0);
+  const backgroundColors = Object.keys(SOURCES).map(k => COLORS[k] || '#999');
 
   const ctx = document.getElementById('sourceChart');
   if(!ctx) return;
 
-  // destroy existing chart before creating new one to avoid duplication
   if(chartInstance){
     chartInstance.destroy();
     chartInstance = null;
   }
 
-  // create new bar chart
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -77,7 +95,9 @@ function renderChart(perSource){
       datasets: [{
         label: 'Pemasukan per Sumber (Rp)',
         data,
-        // Chart.js default color palette will be used
+        backgroundColor: backgroundColors,
+        borderRadius: 6,
+        barThickness: 28
       }]
     },
     options: {
@@ -87,7 +107,6 @@ function renderChart(perSource){
         y: {
           ticks: {
             callback: function(value){
-              // show abbreviated rupiah in ticks (e.g., 100000 -> 100.000)
               return value.toLocaleString('id-ID');
             }
           }
@@ -108,9 +127,11 @@ function renderChart(perSource){
   });
 }
 
-// render UI
+// render UI (uses filter)
 function render(){
-  const { totalIncome, totalExpense, balance, perSource } = calcTotals();
+  // apply filter to derive data shown in chart & summary
+  const filtered = applyMonthFilter(txs);
+  const { totalIncome, totalExpense, balance, perSource } = calcTotalsFromArray(filtered);
 
   qs('#totalBalance').textContent = formatRupiah(balance);
   qs('#totalIncome').textContent = formatRupiah(totalIncome);
@@ -132,13 +153,15 @@ function render(){
     ul.appendChild(li);
   });
 
-  // transactions table
+  // transactions table (show all txs but highlight filtered ones)
   const tbody = qs('#txTable tbody');
   tbody.innerHTML = '';
-  // sort by date desc
-  const sorted = txs.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
-  sorted.forEach((t,i)=>{
+  // sort by date desc (show all txs so user can manage history)
+  const sortedAll = txs.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+  sortedAll.forEach((t,i)=>{
+    const isInFilter = filtered.some(f => f.id === t.id);
     const tr = document.createElement('tr');
+    tr.style.opacity = isInFilter ? '1' : '0.55'; // faded if not in filter
     tr.innerHTML = `
       <td>${t.date}</td>
       <td class="${t.type === 'income' ? 'tx-type-income' : 'tx-type-expense'}">${t.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td>
@@ -162,11 +185,10 @@ function render(){
     };
   });
 
-  // update chart with perSource
+  // update chart with perSource (filtered)
   try {
     renderChart(perSource);
   } catch(err){
-    // jika Chart.js belum load atau error, abaikan (tapi log di console)
     console.error('Chart render error:', err);
   }
 }
@@ -209,8 +231,16 @@ function init(){
     }
   });
 
+  // filter controls
+  qs('#filterMonth').addEventListener('change', () => {
+    render();
+  });
+  qs('#clearFilter').addEventListener('click', () => {
+    qs('#filterMonth').value = '';
+    render();
+  });
+
   // prefilling date today
   qs('#txDate').value = new Date().toISOString().slice(0,10);
 }
 document.addEventListener('DOMContentLoaded', init);
-    
