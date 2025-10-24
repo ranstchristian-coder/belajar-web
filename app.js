@@ -1,6 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month/year/range filter
-// + toast UX + multi-undo (10s) + Undo-All widget
+// MyFinance — multi-undo (10s) + toast countdown + Undo last & Undo all + filters + chart
 
 const KEY = 'myfinance_tx_v1';
 
@@ -32,10 +31,12 @@ const UNDO_DURATION = 10000; // 10 seconds
 const qs = s => document.querySelector(s);
 const qsa = s => Array.from(document.querySelectorAll(s));
 
-// Toast utility
+// Toast utility with countdown progress. Returns object { timeoutId, intervalId, toastEl }
 function showToast(message, type = 'info', opts = {}) {
+  // opts: { duration, action: { label, onClick } , showProgress: boolean }
   const container = qs('#toastContainer');
-  if(!container) return;
+  if(!container) return null;
+  const duration = opts.duration ?? 3500;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   const actionHtml = opts.action ? `<button class="action btn-sm" type="button">${opts.action.label}</button>` : '';
@@ -45,23 +46,52 @@ function showToast(message, type = 'info', opts = {}) {
     ${actionHtml}
     <button class="close" aria-label="close">&times;</button>
   `;
+  // optionally add progress bar
+  if(opts.showProgress && duration > 0){
+    const prog = document.createElement('div');
+    prog.className = 'progress';
+    prog.innerHTML = `<div class="bar"></div>`;
+    toast.appendChild(prog);
+  }
+
   container.appendChild(toast);
   requestAnimationFrame(() => toast.classList.add('show'));
+
+  // removal helper
   const remove = () => {
     toast.classList.remove('show');
-    setTimeout(()=> { try{ toast.remove(); }catch(e){} }, 220);
+    setTimeout(()=> { try{ toast.remove(); } catch(e){} }, 220);
+    // clear any interval stored
+    if(toast._intervalId) clearInterval(toast._intervalId);
+    if(toast._timeoutId) clearTimeout(toast._timeoutId);
   };
+
   toast.querySelector('.close').onclick = remove;
+
+  // action handler
   if(opts.action){
     const btn = toast.querySelector('.action');
-    if(btn) btn.onclick = () => { opts.action.onClick(); remove(); };
+    if(btn) btn.onclick = () => { try{ opts.action.onClick(); } catch(e){ console.error(e); } remove(); };
   }
-  const duration = opts.duration ?? 3500;
-  if(duration > 0) {
-    const tid = setTimeout(remove, duration);
-    return tid;
+
+  // progress animation (reduce width every 100ms)
+  if(opts.showProgress && duration > 0){
+    const bar = toast.querySelector('.bar');
+    const start = Date.now();
+    const total = duration;
+    toast._intervalId = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.max(0, 1 - elapsed / total);
+      if(bar) bar.style.width = (pct * 100) + '%';
+    }, 100);
   }
-  return null;
+
+  // auto remove after duration
+  if(duration > 0){
+    toast._timeoutId = setTimeout(remove, duration);
+  }
+
+  return { timeoutId: toast._timeoutId, intervalId: toast._intervalId, toastEl: toast };
 }
 
 const formatRupiah = (n) => {
@@ -108,7 +138,7 @@ function buildYearOptions(){
 
 function calcTotalsFromArray(arr){
   let totalIncome=0, totalExpense=0; const perSource={}; Object.keys(SOURCES).forEach(k=>perSource[k]=0);
-  arr.forEach(t=>{ const amt = Number(t.amount)||0; if(t.type==='income'){ totalIncome+=amt; if(perSource[t.source]!==undefined) perSource[t.source]+=amt; else perSource['lainnya']+=amt; } else { totalExpense+=amt; } });
+  arr.forEach(t=>{ const amt=Number(t.amount)||0; if(t.type==='income'){ totalIncome+=amt; if(perSource[t.source]!==undefined) perSource[t.source]+=amt; else perSource['lainnya']+=amt; } else totalExpense+=amt; });
   const balance = totalIncome - totalExpense; return { totalIncome, totalExpense, balance, perSource };
 }
 
@@ -125,16 +155,13 @@ function renderChart(perSource){
   });
 }
 
-// ---- Undo widget handling ----
+// Undo widget
 function updateUndoWidget(){
   const widget = qs('#undoWidget');
   const countEl = qs('#undoCount');
   if(!widget || !countEl) return;
   const n = lastDeletedStack.length;
-  if(n === 0){
-    widget.hidden = true;
-    return;
-  }
+  if(n === 0){ widget.hidden = true; return; }
   countEl.textContent = String(n);
   widget.hidden = false;
 }
@@ -143,9 +170,7 @@ function undoAllPending(){
   if(lastDeletedStack.length === 0){ showToast('Tidak ada penghapusan untuk di-undo', 'info'); return; }
   // sort by original index ascending to insert correctly
   const items = lastDeletedStack.slice().sort((a,b)=> a.index - b.index);
-  // clear timeouts
   items.forEach(it => { if(it.timeoutId) clearTimeout(it.timeoutId); });
-  // restore each in order
   items.forEach(it => {
     const insertIndex = Math.min(it.index, txs.length);
     txs.splice(insertIndex, 0, it.tx);
@@ -154,7 +179,19 @@ function undoAllPending(){
   lastDeletedStack = [];
   updateUndoWidget();
   showToast('Semua penghapusan dikembalikan', 'success');
-  render(); // re-render UI
+  render();
+}
+
+function undoLastPending(){
+  if(lastDeletedStack.length === 0){ showToast('Tidak ada penghapusan untuk di-undo', 'info'); return; }
+  const item = lastDeletedStack.pop(); // LIFO
+  if(item.timeoutId) clearTimeout(item.timeoutId);
+  const insertIndex = Math.min(item.index, txs.length);
+  txs.splice(insertIndex, 0, item.tx);
+  save();
+  updateUndoWidget();
+  showToast('Transaksi terakhir dikembalikan', 'success');
+  render();
 }
 
 // render / UI
@@ -193,19 +230,24 @@ function render(){
       const removed = txs.splice(idx,1)[0];
       save();
       render();
+
       // push to stack
       const stackItem = { id: removed.id, tx: removed, index: idx, timeoutId: null };
       lastDeletedStack.push(stackItem);
+
       // set timeout to finalize
       stackItem.timeoutId = setTimeout(()=> {
         const pos = lastDeletedStack.findIndex(x=>x.id===stackItem.id);
         if(pos !== -1) lastDeletedStack.splice(pos,1);
         updateUndoWidget();
       }, UNDO_DURATION + 300);
+
       updateUndoWidget();
-      // show toast with Undo for this item
+
+      // show toast with Undo for this item and progress
       showToast('Transaksi dihapus', 'info', {
         duration: UNDO_DURATION,
+        showProgress: true,
         action: {
           label: 'Undo',
           onClick: () => {
@@ -232,7 +274,7 @@ function render(){
 // add tx
 function addTx(tx){
   tx.id = (Date.now().toString(36) + Math.random().toString(36).slice(2,8));
-  txs.push(tx); save(); showToast('Transaksi ditambahkan', 'success'); render();
+  txs.push(tx); save(); showToast('Transaksi ditambahkan','success'); render();
 }
 
 // init
@@ -257,9 +299,9 @@ function init(){
     }
   });
 
-  qs('#undoAllBtn').addEventListener('click', () => {
-    undoAllPending();
-  });
+  // undo widget
+  qs('#undoAllBtn').addEventListener('click', () => undoAllPending());
+  qs('#undoLastBtn').addEventListener('click', () => undoLastPending());
 
   qs('#applyFilter').addEventListener('click', () => {
     const start = qs('#rangeStart').value, end = qs('#rangeEnd').value;
