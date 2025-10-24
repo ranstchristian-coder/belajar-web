@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month/year/range filter
+// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + range validation
 
 const KEY = 'myfinance_tx_v1';
 
@@ -44,36 +44,63 @@ function save(){
 
 // ---------- FILTER HELPERS ----------
 
-// returns filtered array according to controls
+// utility: parse "YYYY-MM" into Date for first day of month
+function parseMonthToDateStart(monthStr){
+  if(!monthStr) return null;
+  const [y,m] = monthStr.split('-').map(Number);
+  return new Date(y, m - 1, 1);
+}
+// utility: parse "YYYY-MM" into Date for last day of month
+function parseMonthToDateEnd(monthStr){
+  if(!monthStr) return null;
+  const [y,m] = monthStr.split('-').map(Number);
+  // create date day 0 of next month to get last day of this month
+  return new Date(y, m, 0);
+}
+
+// validate that start <= end (both are "YYYY-MM" strings)
+function isRangeValid(start, end){
+  if(!start || !end) return true;
+  const s = parseMonthToDateStart(start);
+  const e = parseMonthToDateEnd(end);
+  return s <= e;
+}
+
+// returns filtered array according to controls (with validation)
 function applyFilters(allTx){
   const start = qs('#rangeStart').value; // YYYY-MM or ''
   const end = qs('#rangeEnd').value;     // YYYY-MM or ''
   const month = qs('#filterMonth').value; // YYYY-MM or ''
   const year = qs('#filterYear').value;   // YYYY or ''
 
-  // 1) if start+end defined => filter inclusive between start-01 and end-lastday
+  // If user provided a range, validate it first
   if(start && end){
-    const startDate = new Date(start + '-01');
-    // end -> last day of end month
-    const [y,eM] = end.split('-');
-    const endDate = new Date(Number(y), Number(eM), 0); // day 0 of next month -> last day of month
+    if(!isRangeValid(start, end)){
+      // invalid range: do not apply and let caller handle (we return all data)
+      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Silakan perbaiki pilihan range.');
+      // clear invalid end to prompt user to re-select (optional UX choice)
+      qs('#rangeEnd').value = '';
+      return allTx.slice();
+    }
+    const startDate = parseMonthToDateStart(start);
+    const endDate = parseMonthToDateEnd(end);
     return allTx.filter(t => {
       const d = new Date(t.date);
       return d >= startDate && d <= endDate;
     });
   }
 
-  // 2) if single month filter
+  // single month filter
   if(month){
     return allTx.filter(t => (t.date || '').slice(0,7) === month);
   }
 
-  // 3) if year filter
+  // year filter
   if(year){
     return allTx.filter(t => (t.date || '').slice(0,4) === year);
   }
 
-  // 4) no filter => return all
+  // no filter
   return allTx.slice();
 }
 
@@ -84,12 +111,15 @@ function buildYearOptions(){
     if(t.date && t.date.length >= 4) years.add(t.date.slice(0,4));
   });
   const sel = qs('#filterYear');
+  const prev = sel.value; // remember current selection if still available
   sel.innerHTML = '<option value="">— Semua Tahun —</option>';
   Array.from(years).sort((a,b)=> b-a).forEach(y => {
     const opt = document.createElement('option');
     opt.value = y; opt.textContent = y;
     sel.appendChild(opt);
   });
+  // restore selection when possible
+  if(prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
 }
 
 // calculate totals from an array of transactions
@@ -270,7 +300,17 @@ function init(){
   });
 
   // filter controls
-  qs('#applyFilter').addEventListener('click', () => render());
+  qs('#applyFilter').addEventListener('click', () => {
+    // before applying, validate range
+    const start = qs('#rangeStart').value;
+    const end = qs('#rangeEnd').value;
+    if(start && end && !isRangeValid(start, end)){
+      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Perbaiki range terlebih dahulu.');
+      return;
+    }
+    render();
+  });
+
   qs('#clearFilter').addEventListener('click', () => {
     qs('#filterMonth').value = '';
     qs('#filterYear').value = '';
@@ -279,16 +319,14 @@ function init(){
     render();
   });
 
-  // also update when month input changes (quick)
+  // quick change handlers with validation
   qs('#filterMonth').addEventListener('change', () => {
-    // clear range if user picks month
     qs('#rangeStart').value = '';
     qs('#rangeEnd').value = '';
     render();
   });
 
   qs('#filterYear').addEventListener('change', () => {
-    // clear range/month when year selected
     qs('#filterMonth').value = '';
     qs('#rangeStart').value = '';
     qs('#rangeEnd').value = '';
@@ -296,15 +334,30 @@ function init(){
   });
 
   qs('#rangeStart').addEventListener('change', () => {
-    // when starting a range, clear single month/year
     qs('#filterMonth').value = '';
     qs('#filterYear').value = '';
+    // if end already set, validate immediately
+    const start = qs('#rangeStart').value;
+    const end = qs('#rangeEnd').value;
+    if(start && end && !isRangeValid(start, end)){
+      alert('Range tidak valid: tanggal mulai (start) lebih besar dari tanggal akhir (end). Silakan perbaiki.');
+      // clear start to force re-pick
+      qs('#rangeStart').value = '';
+    }
   });
+
   qs('#rangeEnd').addEventListener('change', () => {
     qs('#filterMonth').value = '';
     qs('#filterYear').value = '';
-    // apply automatically if both filled
-    if(qs('#rangeStart').value && qs('#rangeEnd').value) render();
+    const start = qs('#rangeStart').value;
+    const end = qs('#rangeEnd').value;
+    if(start && end && !isRangeValid(start, end)){
+      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Silakan pilih kembali end.');
+      qs('#rangeEnd').value = '';
+      return;
+    }
+    // auto-apply if both valid
+    if(start && end) render();
   });
 
   // prefilling date today
