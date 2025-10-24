@@ -39,10 +39,30 @@
 
       <h3>Ringkasan per Sumber</h3>
 
-      <div class="chart-controls" style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
-        <label style="font-size:13px;color:var(--muted)">Filter bulan</label>
-        <input id="filterMonth" type="month" />
-        <button id="clearFilter" class="muted btn-sm" type="button">Reset</button>
+      <div class="chart-controls" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:13px;color:var(--muted)">Filter bulan</label>
+          <input id="filterMonth" type="month" />
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:13px;color:var(--muted)">Filter tahun</label>
+          <select id="filterYear">
+            <option value="">— Semua Tahun —</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:13px;color:var(--muted)">Range (start → end)</label>
+          <input id="rangeStart" type="month" />
+          <span>—</span>
+          <input id="rangeEnd" type="month" />
+        </div>
+
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button id="clearFilter" class="muted btn-sm" type="button">Reset</button>
+          <button id="applyFilter" class="btn-sm muted" type="button">Terapkan</button>
+        </div>
       </div>
 
       <div class="chart-wrap" style="height:220px;margin:6px 0 12px">

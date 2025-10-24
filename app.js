@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month filter
+// Personal Finance Manager + Chart.js with colored bars + month/year/range filter
 
 const KEY = 'myfinance_tx_v1';
 
@@ -42,14 +42,53 @@ function save(){
   localStorage.setItem(KEY, JSON.stringify(txs));
 }
 
-// apply month filter: returns filtered tx array
-function applyMonthFilter(allTx){
-  const monthVal = qs('#filterMonth').value; // format "YYYY-MM" or ""
-  if(!monthVal) return allTx.slice(); // no filter
-  return allTx.filter(t => {
-    // ensure date in YYYY-MM-DD
-    const d = (t.date || '').slice(0,7);
-    return d === monthVal;
+// ---------- FILTER HELPERS ----------
+
+// returns filtered array according to controls
+function applyFilters(allTx){
+  const start = qs('#rangeStart').value; // YYYY-MM or ''
+  const end = qs('#rangeEnd').value;     // YYYY-MM or ''
+  const month = qs('#filterMonth').value; // YYYY-MM or ''
+  const year = qs('#filterYear').value;   // YYYY or ''
+
+  // 1) if start+end defined => filter inclusive between start-01 and end-lastday
+  if(start && end){
+    const startDate = new Date(start + '-01');
+    // end -> last day of end month
+    const [y,eM] = end.split('-');
+    const endDate = new Date(Number(y), Number(eM), 0); // day 0 of next month -> last day of month
+    return allTx.filter(t => {
+      const d = new Date(t.date);
+      return d >= startDate && d <= endDate;
+    });
+  }
+
+  // 2) if single month filter
+  if(month){
+    return allTx.filter(t => (t.date || '').slice(0,7) === month);
+  }
+
+  // 3) if year filter
+  if(year){
+    return allTx.filter(t => (t.date || '').slice(0,4) === year);
+  }
+
+  // 4) no filter => return all
+  return allTx.slice();
+}
+
+// build list of available years from data (for dropdown)
+function buildYearOptions(){
+  const years = new Set();
+  txs.forEach(t => {
+    if(t.date && t.date.length >= 4) years.add(t.date.slice(0,4));
+  });
+  const sel = qs('#filterYear');
+  sel.innerHTML = '<option value="">— Semua Tahun —</option>';
+  Array.from(years).sort((a,b)=> b-a).forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    sel.appendChild(opt);
   });
 }
 
@@ -127,10 +166,11 @@ function renderChart(perSource){
   });
 }
 
-// render UI (uses filter)
+// render UI (applies filter)
 function render(){
-  // apply filter to derive data shown in chart & summary
-  const filtered = applyMonthFilter(txs);
+  // prepare controls
+  buildYearOptions(); // update year dropdown from existing txs
+  const filtered = applyFilters(txs);
   const { totalIncome, totalExpense, balance, perSource } = calcTotalsFromArray(filtered);
 
   qs('#totalBalance').textContent = formatRupiah(balance);
@@ -156,12 +196,11 @@ function render(){
   // transactions table (show all txs but highlight filtered ones)
   const tbody = qs('#txTable tbody');
   tbody.innerHTML = '';
-  // sort by date desc (show all txs so user can manage history)
   const sortedAll = txs.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
   sortedAll.forEach((t,i)=>{
     const isInFilter = filtered.some(f => f.id === t.id);
     const tr = document.createElement('tr');
-    tr.style.opacity = isInFilter ? '1' : '0.55'; // faded if not in filter
+    tr.style.opacity = isInFilter ? '1' : '0.55';
     tr.innerHTML = `
       <td>${t.date}</td>
       <td class="${t.type === 'income' ? 'tx-type-income' : 'tx-type-expense'}">${t.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td>
@@ -219,7 +258,6 @@ function init(){
 
     addTx({ date, type, source: type === 'income' ? source : 'Pengeluaran', amount, note });
     form.reset();
-    // reset date to today for convenience
     qs('#txDate').value = new Date().toISOString().slice(0,10);
   });
 
@@ -232,12 +270,41 @@ function init(){
   });
 
   // filter controls
-  qs('#filterMonth').addEventListener('change', () => {
-    render();
-  });
+  qs('#applyFilter').addEventListener('click', () => render());
   qs('#clearFilter').addEventListener('click', () => {
     qs('#filterMonth').value = '';
+    qs('#filterYear').value = '';
+    qs('#rangeStart').value = '';
+    qs('#rangeEnd').value = '';
     render();
+  });
+
+  // also update when month input changes (quick)
+  qs('#filterMonth').addEventListener('change', () => {
+    // clear range if user picks month
+    qs('#rangeStart').value = '';
+    qs('#rangeEnd').value = '';
+    render();
+  });
+
+  qs('#filterYear').addEventListener('change', () => {
+    // clear range/month when year selected
+    qs('#filterMonth').value = '';
+    qs('#rangeStart').value = '';
+    qs('#rangeEnd').value = '';
+    render();
+  });
+
+  qs('#rangeStart').addEventListener('change', () => {
+    // when starting a range, clear single month/year
+    qs('#filterMonth').value = '';
+    qs('#filterYear').value = '';
+  });
+  qs('#rangeEnd').addEventListener('change', () => {
+    qs('#filterMonth').value = '';
+    qs('#filterYear').value = '';
+    // apply automatically if both filled
+    if(qs('#rangeStart').value && qs('#rangeEnd').value) render();
   });
 
   // prefilling date today
