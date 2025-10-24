@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + toast UX + Undo delete
+// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + toast UX + multi-undo (10s)
 
 const KEY = 'myfinance_tx_v1';
 
@@ -24,10 +24,9 @@ const COLORS = {
 let txs = []; // array transaksi
 let chartInstance = null; // Chart.js instance
 
-// For undo functionality
-let lastDeleted = null; // { tx, index, timeoutId }
-
-const UNDO_DURATION = 6000; // ms — how long undo toast stays (6s)
+// For multi-undo functionality
+let lastDeletedStack = []; // array of { tx, index, timeoutId, id }
+const UNDO_DURATION = 10000; // 10 seconds
 
 // helpers
 const qs = s => document.querySelector(s);
@@ -80,7 +79,6 @@ function showToast(message, type = 'info', opts = {}) {
   const duration = opts.duration ?? 3500;
   if(duration > 0){
     const tid = setTimeout(remove, duration);
-    // return tid in case caller wants to clear
     return tid;
   }
   return null;
@@ -288,7 +286,7 @@ function render(){
       // confirm deletion
       if(!confirm('Hapus transaksi ini?')) return;
 
-      // perform delete with undo support
+      // perform delete with multi-undo support
       const idx = txs.findIndex(x => x.id === id);
       if(idx === -1) return;
 
@@ -296,38 +294,47 @@ function render(){
       save();
       render(); // show changes
 
-      // clear any previous pending deletion (finalize it)
-      if(lastDeleted && lastDeleted.timeoutId){
-        clearTimeout(lastDeleted.timeoutId);
-        lastDeleted = null;
-      }
+      // create stack item
+      const stackItem = {
+        id: removed.id,
+        tx: removed,
+        index: idx,
+        timeoutId: null
+      };
 
-      // store lastDeleted with timeout to finalize
-      const timeoutId = setTimeout(() => {
-        // finalize deletion by clearing lastDeleted (nothing else needed cause already removed)
-        lastDeleted = null;
-      }, UNDO_DURATION + 300); // slightly longer than toast
+      // push to stack
+      lastDeletedStack.push(stackItem);
 
-      lastDeleted = { tx: removed, index: idx, timeoutId };
+      // set timeout to finalize (clear from stack) after UNDO_DURATION
+      stackItem.timeoutId = setTimeout(() => {
+        // locate and remove from stack if still present
+        const pos = lastDeletedStack.findIndex(x => x.id === stackItem.id);
+        if(pos !== -1) lastDeletedStack.splice(pos, 1);
+        // nothing else required (transaction already removed & saved)
+      }, UNDO_DURATION + 300); // small buffer
 
-      // show toast with Undo action
+      // show toast with Undo action specific for this deletion
       showToast('Transaksi dihapus', 'info', {
         duration: UNDO_DURATION,
         action: {
           label: 'Undo',
           onClick: () => {
-            // restore transaction at original index (or push if index > length)
-            if(!lastDeleted) {
-              showToast('Undo gagal: tidak ada transaksi yang bisa dikembalikan', 'error');
+            // find this item in stack
+            const pos = lastDeletedStack.findIndex(x => x.id === stackItem.id);
+            if(pos === -1){
+              showToast('Undo tidak tersedia (waktu habis)', 'error');
               return;
             }
-            clearTimeout(lastDeleted.timeoutId);
-            const restored = lastDeleted.tx;
-            const insertIndex = Math.min(lastDeleted.index, txs.length);
-            txs.splice(insertIndex, 0, restored);
+            const item = lastDeletedStack[pos];
+            // clear its timeout
+            if(item.timeoutId) clearTimeout(item.timeoutId);
+            // restore at original index (or push if out of range)
+            const insertIndex = Math.min(item.index, txs.length);
+            txs.splice(insertIndex, 0, item.tx);
             save();
             showToast('Transaksi dikembalikan', 'success');
-            lastDeleted = null;
+            // remove from stack
+            lastDeletedStack.splice(pos, 1);
             render();
           }
         }
