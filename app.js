@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + toast UX
+// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + toast UX + Undo delete
 
 const KEY = 'myfinance_tx_v1';
 
@@ -24,21 +24,28 @@ const COLORS = {
 let txs = []; // array transaksi
 let chartInstance = null; // Chart.js instance
 
+// For undo functionality
+let lastDeleted = null; // { tx, index, timeoutId }
+
+const UNDO_DURATION = 6000; // ms — how long undo toast stays (6s)
+
 // helpers
 const qs = s => document.querySelector(s);
 const qsa = s => Array.from(document.querySelectorAll(s));
 
-// ===== Toast utility =====
+// ===== Toast utility (supports action button) =====
 function showToast(message, type = 'info', opts = {}) {
-  // type: 'info' | 'success' | 'error'
+  // opts: { duration, action: { label, onClick } }
   const container = qs('#toastContainer');
   if(!container) return;
 
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
+  const actionHtml = opts.action ? `<button class="action btn-sm" type="button">${opts.action.label}</button>` : '';
   toast.innerHTML = `
     <div class="dot" style="background:${type==='success'? 'var(--toast-success)' : type==='error' ? 'var(--toast-error)' : 'var(--toast-info)'}"></div>
     <div class="text">${message}</div>
+    ${actionHtml}
     <button class="close" aria-label="close">&times;</button>
   `;
   container.appendChild(toast);
@@ -49,14 +56,34 @@ function showToast(message, type = 'info', opts = {}) {
   // close handler
   const remove = () => {
     toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 220);
+    setTimeout(() => {
+      try { toast.remove(); } catch(e){}
+    }, 220);
   };
   toast.querySelector('.close').onclick = remove;
 
+  // action handler
+  if(opts.action){
+    const btn = toast.querySelector('.action');
+    if(btn){
+      btn.onclick = (e) => {
+        try {
+          opts.action.onClick();
+        } catch(err) {
+          console.error('Toast action error', err);
+        }
+        remove();
+      };
+    }
+  }
+
   const duration = opts.duration ?? 3500;
   if(duration > 0){
-    setTimeout(remove, duration);
+    const tid = setTimeout(remove, duration);
+    // return tid in case caller wants to clear
+    return tid;
   }
+  return null;
 }
 
 // format currency
@@ -100,8 +127,7 @@ function applyFilters(allTx){
 
   if(start && end){
     if(!isRangeValid(start, end)){
-      // show toast instead of alert
-      showToast('Range tidak valid: tanggal akhir lebih awal dari tanggal mulai. Perbaiki pilihan range.', 'error');
+      showToast('Range tidak valid: tanggal akhir lebih awal dari tanggal mulai. Perbaiki pilihan range.', 'error', { duration: 4000 });
       qs('#rangeEnd').value = '';
       return allTx.slice();
     }
@@ -259,12 +285,53 @@ function render(){
   qsa('button[data-id]').forEach(btn => {
     btn.onclick = (e) => {
       const id = e.target.dataset.id;
-      if(confirm('Hapus transaksi ini?')) {
-        txs = txs.filter(x => x.id !== id);
-        save();
-        showToast('Transaksi dihapus', 'info');
-        render();
+      // confirm deletion
+      if(!confirm('Hapus transaksi ini?')) return;
+
+      // perform delete with undo support
+      const idx = txs.findIndex(x => x.id === id);
+      if(idx === -1) return;
+
+      const removed = txs.splice(idx, 1)[0]; // remove from array
+      save();
+      render(); // show changes
+
+      // clear any previous pending deletion (finalize it)
+      if(lastDeleted && lastDeleted.timeoutId){
+        clearTimeout(lastDeleted.timeoutId);
+        lastDeleted = null;
       }
+
+      // store lastDeleted with timeout to finalize
+      const timeoutId = setTimeout(() => {
+        // finalize deletion by clearing lastDeleted (nothing else needed cause already removed)
+        lastDeleted = null;
+      }, UNDO_DURATION + 300); // slightly longer than toast
+
+      lastDeleted = { tx: removed, index: idx, timeoutId };
+
+      // show toast with Undo action
+      showToast('Transaksi dihapus', 'info', {
+        duration: UNDO_DURATION,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            // restore transaction at original index (or push if index > length)
+            if(!lastDeleted) {
+              showToast('Undo gagal: tidak ada transaksi yang bisa dikembalikan', 'error');
+              return;
+            }
+            clearTimeout(lastDeleted.timeoutId);
+            const restored = lastDeleted.tx;
+            const insertIndex = Math.min(lastDeleted.index, txs.length);
+            txs.splice(insertIndex, 0, restored);
+            save();
+            showToast('Transaksi dikembalikan', 'success');
+            lastDeleted = null;
+            render();
+          }
+        }
+      });
     };
   });
 
