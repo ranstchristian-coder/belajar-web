@@ -64,7 +64,7 @@ tbody td{padding:10px;border-top:1px solid rgba(255,255,255,0.02)}
   flex-direction:column;
   gap:10px;
   z-index: 9999;
-  pointer-events: none; /* allow clicks through container except on toasts */
+  pointer-events: none;
 }
 .toast{
   pointer-events: auto;
@@ -96,9 +96,33 @@ tbody td{padding:10px;border-top:1px solid rgba(255,255,255,0.02)}
 
 .toast .text{flex:1}
 .toast .close{margin-left:8px;background:transparent;border:0;color:inherit;cursor:pointer;font-weight:700;padding:4px}
+.toast .action{margin-left:8px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:6px 8px;border-radius:8px}
 
-/* small responsive tweaks for toast */
+/* ===== Undo widget ===== */
+.undo-widget{
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9998;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.03);
+  padding:8px;
+  border-radius:12px;
+  box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+  pointer-events: auto;
+}
+.undo-count{
+  min-width:28px; height:28px; display:flex;align-items:center;justify-content:center;
+  background:var(--accent); color:#0b1020; font-weight:700; border-radius:8px; padding:6px 8px;
+}
+.undo-widget .btn-sm{ padding:6px 10px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted) }
+
+/* small responsive tweaks */
 @media(max-width:480px){
   #toastContainer{ left: 12px; right:12px; top:12px }
   .toast{ font-size:13px; min-width:unset; max-width:unset; padding:10px }
+  .undo-widget{ right:12px; bottom:12px; }
 }
