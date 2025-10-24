@@ -1,12 +1,121 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Belajar Web Pertamaku</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyFinance — Manajemen Keuangan Pribadi</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Halo Dunia 🌍</h1>
-  <p>Ini halaman web pertamaku!</p>
-  <script src="script.js"></script>
+  <header class="topbar">
+    <div class="container">
+      <h1>MyFinance</h1>
+      <p class="subtitle">Kelola pemasukan & pengeluaran — cepat dan rapi</p>
+    </div>
+  </header>
+
+  <main class="container main-grid">
+    <!-- Left: Summary cards -->
+    <section class="panel summary">
+      <h2>Ringkasan</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">Total Saldo</div>
+          <div id="totalBalance" class="card-value">Rp0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Pemasukan</div>
+          <div id="totalIncome" class="card-value">Rp0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Pengeluaran</div>
+          <div id="totalExpense" class="card-value">Rp0</div>
+        </div>
+        <div class="card highlight">
+          <div class="card-title">Sumber Terbesar (bulan ini)</div>
+          <div id="topSource" class="card-value">—</div>
+        </div>
+      </div>
+
+            <h3>Ringkasan per Sumber</h3>
+
+      <div class="chart-wrap" style="margin:12px 0 6px">
+        <canvas id="sourceChart" width="400" height="180"></canvas>
+      </div>
+
+      <ul id="sourceList" class="source-list">
+        <!-- dinamisk -->
+      </ul>
+
+    </section>
+
+    <!-- Right: Form + Transactions -->
+    <section class="panel transactions">
+      <h2>Tambah Transaksi</h2>
+      <form id="txForm" class="tx-form">
+        <div class="row">
+          <label for="txDate">Tanggal</label>
+          <input id="txDate" type="date" required />
+        </div>
+
+        <div class="row">
+          <label for="txType">Tipe</label>
+          <select id="txType">
+            <option value="income">Pemasukan</option>
+            <option value="expense">Pengeluaran</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="txSource">Sumber (jika pemasukan)</label>
+          <select id="txSource">
+            <option value="toko_sembako">Toko Sembako</option>
+            <option value="kebun_sawit">Kebun Sawit</option>
+            <option value="jual_beli_tbs">Jual Beli TBS (Ramp)</option>
+            <option value="jaringan_wifi">Jaringan Wifi</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="txAmount">Jumlah (Rp)</label>
+          <input id="txAmount" type="number" min="0" step="1" placeholder="100000" required />
+        </div>
+
+        <div class="row">
+          <label for="txNote">Catatan</label>
+          <input id="txNote" type="text" placeholder="Contoh: bayar listrik / penjualan harian" />
+        </div>
+
+        <div class="row actions">
+          <button id="addBtn" type="submit">Tambah</button>
+          <button id="clearBtn" type="button" class="muted">Bersihkan semua</button>
+        </div>
+      </form>
+
+      <h2>Daftar Transaksi</h2>
+      <div class="table-wrap">
+        <table id="txTable">
+          <thead>
+            <tr>
+              <th>Tanggal</th><th>Type</th><th>Sumber/Kategori</th><th>Catatan</th><th>Jumlah (Rp)</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- dinamis -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <small>MyFinance • Built for you — tampil lokal, simpan di browser</small>
+    </div>
+  </footer>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
