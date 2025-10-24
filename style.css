@@ -6,6 +6,10 @@
   --glass: rgba(255,255,255,0.03);
   --success:#22c55e;
   --danger:#ef4444;
+  --toast-bg: rgba(11,17,32,0.9);
+  --toast-info: #3b82f6;
+  --toast-success: #10b981;
+  --toast-error: #ef4444;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6eef8;background: linear-gradient(180deg,#071128 0%, #0b1624 100%);-webkit-font-smoothing:antialiased}
@@ -50,3 +54,51 @@ tbody td{padding:10px;border-top:1px solid rgba(255,255,255,0.02)}
 
 /* footer */
 .footer{padding:12px 0;border-top:1px solid rgba(255,255,255,0.02);margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ===== Toast styles ===== */
+#toastContainer{
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index: 9999;
+  pointer-events: none; /* allow clicks through container except on toasts */
+}
+.toast{
+  pointer-events: auto;
+  min-width: 220px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: white;
+  background: var(--toast-bg);
+  box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  transform-origin: top right;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transition: opacity .18s ease, transform .18s ease;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  font-size:14px;
+}
+.toast.show{ opacity:1; transform: translateY(0) scale(1); }
+
+.toast .dot{
+  width:10px;height:10px;border-radius:50%;
+  flex:0 0 10px;
+}
+.toast.info{ background: linear-gradient(90deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06)); color: var(--muted); border:1px solid rgba(59,130,246,0.12); }
+.toast.success{ background: linear-gradient(90deg, rgba(16,185,129,0.10), rgba(16,185,129,0.04)); color: #e6fff5; border:1px solid rgba(16,185,129,0.12); }
+.toast.error{ background: linear-gradient(90deg, rgba(239,68,68,0.10), rgba(239,68,68,0.04)); color: #ffecec; border:1px solid rgba(239,68,68,0.12); }
+
+.toast .text{flex:1}
+.toast .close{margin-left:8px;background:transparent;border:0;color:inherit;cursor:pointer;font-weight:700;padding:4px}
+
+/* small responsive tweaks for toast */
+@media(max-width:480px){
+  #toastContainer{ left: 12px; right:12px; top:12px }
+  .toast{ font-size:13px; min-width:unset; max-width:unset; padding:10px }
+}

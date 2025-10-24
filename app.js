@@ -1,5 +1,5 @@
 // === app.js ===
-// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + range validation
+// Personal Finance Manager + Chart.js with colored bars + month/year/range filter + toast UX
 
 const KEY = 'myfinance_tx_v1';
 
@@ -28,6 +28,38 @@ let chartInstance = null; // Chart.js instance
 const qs = s => document.querySelector(s);
 const qsa = s => Array.from(document.querySelectorAll(s));
 
+// ===== Toast utility =====
+function showToast(message, type = 'info', opts = {}) {
+  // type: 'info' | 'success' | 'error'
+  const container = qs('#toastContainer');
+  if(!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <div class="dot" style="background:${type==='success'? 'var(--toast-success)' : type==='error' ? 'var(--toast-error)' : 'var(--toast-info)'}"></div>
+    <div class="text">${message}</div>
+    <button class="close" aria-label="close">&times;</button>
+  `;
+  container.appendChild(toast);
+
+  // show with animation
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  // close handler
+  const remove = () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 220);
+  };
+  toast.querySelector('.close').onclick = remove;
+
+  const duration = opts.duration ?? 3500;
+  if(duration > 0){
+    setTimeout(remove, duration);
+  }
+}
+
+// format currency
 const formatRupiah = (n) => {
   const x = Math.abs(Number(n) || 0);
   return 'Rp' + x.toLocaleString('id-ID');
@@ -43,22 +75,16 @@ function save(){
 }
 
 // ---------- FILTER HELPERS ----------
-
-// utility: parse "YYYY-MM" into Date for first day of month
 function parseMonthToDateStart(monthStr){
   if(!monthStr) return null;
   const [y,m] = monthStr.split('-').map(Number);
   return new Date(y, m - 1, 1);
 }
-// utility: parse "YYYY-MM" into Date for last day of month
 function parseMonthToDateEnd(monthStr){
   if(!monthStr) return null;
   const [y,m] = monthStr.split('-').map(Number);
-  // create date day 0 of next month to get last day of this month
   return new Date(y, m, 0);
 }
-
-// validate that start <= end (both are "YYYY-MM" strings)
 function isRangeValid(start, end){
   if(!start || !end) return true;
   const s = parseMonthToDateStart(start);
@@ -66,19 +92,16 @@ function isRangeValid(start, end){
   return s <= e;
 }
 
-// returns filtered array according to controls (with validation)
 function applyFilters(allTx){
-  const start = qs('#rangeStart').value; // YYYY-MM or ''
-  const end = qs('#rangeEnd').value;     // YYYY-MM or ''
-  const month = qs('#filterMonth').value; // YYYY-MM or ''
-  const year = qs('#filterYear').value;   // YYYY or ''
+  const start = qs('#rangeStart').value;
+  const end = qs('#rangeEnd').value;
+  const month = qs('#filterMonth').value;
+  const year = qs('#filterYear').value;
 
-  // If user provided a range, validate it first
   if(start && end){
     if(!isRangeValid(start, end)){
-      // invalid range: do not apply and let caller handle (we return all data)
-      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Silakan perbaiki pilihan range.');
-      // clear invalid end to prompt user to re-select (optional UX choice)
+      // show toast instead of alert
+      showToast('Range tidak valid: tanggal akhir lebih awal dari tanggal mulai. Perbaiki pilihan range.', 'error');
       qs('#rangeEnd').value = '';
       return allTx.slice();
     }
@@ -90,35 +113,30 @@ function applyFilters(allTx){
     });
   }
 
-  // single month filter
   if(month){
     return allTx.filter(t => (t.date || '').slice(0,7) === month);
   }
 
-  // year filter
   if(year){
     return allTx.filter(t => (t.date || '').slice(0,4) === year);
   }
 
-  // no filter
   return allTx.slice();
 }
 
-// build list of available years from data (for dropdown)
 function buildYearOptions(){
   const years = new Set();
   txs.forEach(t => {
     if(t.date && t.date.length >= 4) years.add(t.date.slice(0,4));
   });
   const sel = qs('#filterYear');
-  const prev = sel.value; // remember current selection if still available
+  const prev = sel.value;
   sel.innerHTML = '<option value="">— Semua Tahun —</option>';
   Array.from(years).sort((a,b)=> b-a).forEach(y => {
     const opt = document.createElement('option');
     opt.value = y; opt.textContent = y;
     sel.appendChild(opt);
   });
-  // restore selection when possible
   if(prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
 }
 
@@ -143,7 +161,7 @@ function calcTotalsFromArray(arr){
   return { totalIncome, totalExpense, balance, perSource };
 }
 
-// Chart: create or update
+// Chart
 function renderChart(perSource){
   const labels = Object.keys(SOURCES).map(k => SOURCES[k]);
   const data = Object.keys(SOURCES).map(k => perSource[k] || 0);
@@ -198,8 +216,7 @@ function renderChart(perSource){
 
 // render UI (applies filter)
 function render(){
-  // prepare controls
-  buildYearOptions(); // update year dropdown from existing txs
+  buildYearOptions();
   const filtered = applyFilters(txs);
   const { totalIncome, totalExpense, balance, perSource } = calcTotalsFromArray(filtered);
 
@@ -207,14 +224,12 @@ function render(){
   qs('#totalIncome').textContent = formatRupiah(totalIncome);
   qs('#totalExpense').textContent = formatRupiah(totalExpense);
 
-  // top source
   let top = {key:null,val:0};
   Object.keys(perSource).forEach(k=>{
     if(perSource[k] > top.val){ top = {key:k, val: perSource[k]}; }
   });
   qs('#topSource').textContent = top.key ? `${SOURCES[top.key]} — ${formatRupiah(top.val)}` : '—';
 
-  // source list
   const ul = qs('#sourceList');
   ul.innerHTML = '';
   Object.keys(perSource).forEach(k => {
@@ -223,7 +238,6 @@ function render(){
     ul.appendChild(li);
   });
 
-  // transactions table (show all txs but highlight filtered ones)
   const tbody = qs('#txTable tbody');
   tbody.innerHTML = '';
   const sortedAll = txs.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
@@ -242,19 +256,18 @@ function render(){
     tbody.appendChild(tr);
   });
 
-  // bind delete buttons
   qsa('button[data-id]').forEach(btn => {
     btn.onclick = (e) => {
       const id = e.target.dataset.id;
       if(confirm('Hapus transaksi ini?')) {
         txs = txs.filter(x => x.id !== id);
         save();
+        showToast('Transaksi dihapus', 'info');
         render();
       }
     };
   });
 
-  // update chart with perSource (filtered)
   try {
     renderChart(perSource);
   } catch(err){
@@ -267,6 +280,7 @@ function addTx(tx){
   tx.id = (Date.now().toString(36) + Math.random().toString(36).slice(2,8));
   txs.push(tx);
   save();
+  showToast('Transaksi ditambahkan', 'success');
   render();
 }
 
@@ -284,7 +298,10 @@ function init(){
     const amount = Number(qs('#txAmount').value || 0);
     const note = qs('#txNote').value.trim();
 
-    if(!amount || amount <= 0){ alert('Masukkan jumlah yang valid'); return; }
+    if(!amount || amount <= 0){
+      showToast('Masukkan jumlah yang valid (lebih besar dari 0)', 'error');
+      return;
+    }
 
     addTx({ date, type, source: type === 'income' ? source : 'Pengeluaran', amount, note });
     form.reset();
@@ -295,20 +312,21 @@ function init(){
     if(confirm('Hapus semua transaksi dari browser ini?')) {
       txs = [];
       save();
+      showToast('Semua transaksi telah dihapus', 'info');
       render();
     }
   });
 
   // filter controls
   qs('#applyFilter').addEventListener('click', () => {
-    // before applying, validate range
     const start = qs('#rangeStart').value;
     const end = qs('#rangeEnd').value;
     if(start && end && !isRangeValid(start, end)){
-      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Perbaiki range terlebih dahulu.');
+      showToast('Range tidak valid: tanggal akhir lebih awal dari tanggal mulai. Perbaiki range terlebih dahulu.', 'error');
       return;
     }
     render();
+    showToast('Filter diterapkan', 'info');
   });
 
   qs('#clearFilter').addEventListener('click', () => {
@@ -317,13 +335,14 @@ function init(){
     qs('#rangeStart').value = '';
     qs('#rangeEnd').value = '';
     render();
+    showToast('Filter direset', 'info');
   });
 
-  // quick change handlers with validation
   qs('#filterMonth').addEventListener('change', () => {
     qs('#rangeStart').value = '';
     qs('#rangeEnd').value = '';
     render();
+    showToast('Filter bulan diterapkan', 'info');
   });
 
   qs('#filterYear').addEventListener('change', () => {
@@ -331,17 +350,16 @@ function init(){
     qs('#rangeStart').value = '';
     qs('#rangeEnd').value = '';
     render();
+    showToast('Filter tahun diterapkan', 'info');
   });
 
   qs('#rangeStart').addEventListener('change', () => {
     qs('#filterMonth').value = '';
     qs('#filterYear').value = '';
-    // if end already set, validate immediately
     const start = qs('#rangeStart').value;
     const end = qs('#rangeEnd').value;
     if(start && end && !isRangeValid(start, end)){
-      alert('Range tidak valid: tanggal mulai (start) lebih besar dari tanggal akhir (end). Silakan perbaiki.');
-      // clear start to force re-pick
+      showToast('Range tidak valid: tanggal mulai lebih besar dari tanggal akhir. Silakan perbaiki.', 'error');
       qs('#rangeStart').value = '';
     }
   });
@@ -352,15 +370,16 @@ function init(){
     const start = qs('#rangeStart').value;
     const end = qs('#rangeEnd').value;
     if(start && end && !isRangeValid(start, end)){
-      alert('Range tidak valid: tanggal akhir (end) lebih awal dari tanggal mulai (start). Silakan pilih kembali end.');
+      showToast('Range tidak valid: tanggal akhir lebih awal dari tanggal mulai. Silakan pilih kembali end.', 'error');
       qs('#rangeEnd').value = '';
       return;
     }
-    // auto-apply if both valid
-    if(start && end) render();
+    if(start && end) {
+      render();
+      showToast('Range diterapkan', 'info');
+    }
   });
 
-  // prefilling date today
   qs('#txDate').value = new Date().toISOString().slice(0,10);
 }
 document.addEventListener('DOMContentLoaded', init);
