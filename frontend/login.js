@@ -1,4 +1,7 @@
 // login.js — Validasi UX: Show/Hide password, Remember Me, Error messages
+document.body.setAttribute('data-theme', 'light');
+// Force light on login page (defensive)
+try { document.body.setAttribute('data-theme', 'light'); } catch {}
 (function(){
   const $ = (s)=>document.querySelector(s);
 

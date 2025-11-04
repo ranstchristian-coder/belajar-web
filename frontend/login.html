@@ -8,6 +8,22 @@
   <!-- Styles -->
   <link rel="stylesheet" href="login.css?v=20251104a">
 
+  <style>
+    /* FORCE LIGHT THEME — login only */
+    .login-body{
+      --bg:#f7f8fa;        /* page bg */
+      --text:#111827;      /* text */
+      --panel:#ffffff;     /* card */
+      --muted:#6b7280;     /* secondary text */
+      --accent:#2563eb;    /* button/link */
+      background:var(--bg) !important;
+      color:var(--text) !important;
+    }
+    .login-card{ background:var(--panel) !important; color:var(--text) !important; }
+    .login-card .muted{ color:var(--muted) !important; }
+    .login-form input, .login-form .btn{ color:inherit; }
+  </style>
+
   <!-- Favicon & App Icons -->
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
