@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lupa Password — YuRa</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body class="login-body">
+  <main class="login-frame">
+    <section class="login-right only">
+      <div class="login-card">
+        <header class="brand small">
+          <h1>Lupa Password</h1>
+          <p class="muted">Kami akan mengirim tautan reset ke email kamu</p>
+        </header>
+
+        <form id="forgotForm" class="login-form" autocomplete="off">
+          <label class="field">
+            <span>Email</span>
+            <input id="fp-email" type="email" required autocomplete="email">
+          </label>
+
+          <div class="actions">
+            <button type="submit" class="btn primary">Kirim Link Reset</button>
+            <a class="btn outlined" href="login.html">Kembali</a>
+          </div>
+
+          <div id="fp-msg" class="msg" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const API_BASE = (window.API_BASE) || 'https://yura-api.onrender.com';
+      const f = document.getElementById('forgotForm');
+      const msg = document.getElementById('fp-msg');
+      const show = (t, ok=false)=>{ msg.textContent=t; msg.className='msg '+(ok?'ok':'err'); };
+
+      f?.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email = document.getElementById('fp-email').value.trim();
+        try{
+          const r = await fetch((API_BASE.replace(/\/$/,'') + '/auth/forgot'), {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ email })
+          });
+          if (!r.ok) throw new Error((await r.json().catch(()=>({})))?.error || r.statusText);
+          show('Cek email kamu untuk tautan reset.', true);
+        }catch(err){ show(err.message || 'Gagal mengirim email reset'); }
+      });
+    })();
+  </script>
+</body>
+</html>
