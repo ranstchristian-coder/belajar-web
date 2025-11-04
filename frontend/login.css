@@ -79,3 +79,18 @@ body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial;color:
   .login-right{padding:20px}
   .login-card{border-radius:20px}
 }
+
+.auth-links {
+  margin-top: 12px;
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  font-size: .925rem;
+}
+.auth-links a { text-decoration: none; }
+.auth-links a:hover { text-decoration: underline; }
+.brand.small h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+.login-right.only { width: 100%; display: flex; justify-content: center; }
+
+.auth-links { display:flex !important; gap:.5rem; justify-content:center; margin-top:.5rem; }
+.auth-links .muted { opacity:.8; }

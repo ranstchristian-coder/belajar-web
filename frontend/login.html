@@ -6,15 +6,15 @@
   <title>Login — YuRa Personal Finance</title>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="login.css?v=20251104">
 
-  <!-- Favicon & App Icons (pakai PNG agar aman di semua UA) -->
+  <!-- Favicon & App Icons -->
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
   <!-- PWA / Manifest -->
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#0066cc" />
+  <meta name="theme-color" content="#0b0b0c" />
   <meta name="mobile-web-app-capable" content="yes" />
 </head>
 <body class="login-body">
@@ -39,18 +39,26 @@
         <form id="loginForm" autocomplete="off" class="login-form">
           <label for="username" class="field">
             <span>Username</span>
-            <input id="username" name="username" type="text" placeholder="demo" required />
+            <input id="username" name="username" type="text" placeholder="demo"
+                  required autocomplete="username" />
           </label>
 
           <label for="password" class="field">
             <span>Password</span>
-            <input id="password" name="password" type="password" placeholder="demo123" required />
+            <input id="password" name="password" type="password" placeholder="demo123"
+                  required autocomplete="current-password" />
           </label>
 
           <div class="actions">
-            <button type="submit" class="btn primary">Login</button>
-            <button type="button" id="demoBtn" class="btn outlined">Login Demo</button>
+            <button type="submit" class="btn primary">Log In</button>
+            <!-- HAPUS tombol demo; jangan ada #demoBtn -->
           </div>
+
+          <nav class="auth-links">
+            <a href="forgot.html" class="muted">Forgot your password?</a>
+            <span>•</span>
+            <a href="signup.html">Sign up</a>
+          </nav>
 
           <div id="loginMsg" class="msg" aria-live="polite"></div>
         </form>
@@ -63,15 +71,12 @@
   </main>
 
   <!-- Scripts -->
-  <script src="login.js"></script>
+  <script src="login.js?v=20251104"></script>
   <script>
-    // Tahun di footer
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Registrasi Service Worker (path absolut agar aktif dari /login.html juga)
+    // SW cache-bust
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('/service-worker.js?v=3')
           .catch(err => console.warn('[SW] register failed', err));
       });
     }
