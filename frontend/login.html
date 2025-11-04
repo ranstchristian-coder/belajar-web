@@ -6,7 +6,7 @@
   <title>Login — YuRa Personal Finance</title>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="login.css?v=20251104">
+  <link rel="stylesheet" href="login.css?v=20251104a">
 
   <!-- Favicon & App Icons -->
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
@@ -36,31 +36,39 @@
         </header>
 
         <!-- FORM -->
-        <form id="loginForm" autocomplete="off" class="login-form">
+        <form id="loginForm" autocomplete="off" class="login-form" novalidate>
           <label for="username" class="field">
             <span>Username</span>
             <input id="username" name="username" type="text" placeholder="demo"
-                  required autocomplete="username" />
+                   required autocomplete="username" />
           </label>
 
-          <label for="password" class="field">
+          <label for="password" class="field field-password">
             <span>Password</span>
             <input id="password" name="password" type="password" placeholder="demo123"
-                  required autocomplete="current-password" />
+                   required autocomplete="current-password" />
+            <button type="button" id="togglePw" class="pw-toggle" aria-label="Tampilkan password" title="Show/Hide">
+              <!-- Ikon mata sederhana (CSS yang mengatur) -->
+              <span class="pw-eye" aria-hidden="true"></span>
+            </button>
+          </label>
+
+          <label class="remember-line">
+            <input type="checkbox" id="rememberMe" />
+            <span>Ingat username ini</span>
           </label>
 
           <div class="actions">
-            <button type="submit" class="btn primary">Log In</button>
-            <!-- HAPUS tombol demo; jangan ada #demoBtn -->
+            <button type="submit" id="loginBtn" class="btn primary">Log In</button>
           </div>
+
+          <div id="loginMsg" class="msg" aria-live="polite"></div>
 
           <nav class="auth-links">
             <a href="forgot.html" class="muted">Forgot your password?</a>
             <span>•</span>
             <a href="signup.html">Sign up</a>
           </nav>
-
-          <div id="loginMsg" class="msg" aria-live="polite"></div>
         </form>
 
         <footer class="foot">
@@ -71,8 +79,11 @@
   </main>
 
   <!-- Scripts -->
-  <script src="login.js?v=20251104"></script>
+  <script src="login.js?v=20251104a"></script>
   <script>
+    // Tahun di footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
     // SW cache-bust
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
