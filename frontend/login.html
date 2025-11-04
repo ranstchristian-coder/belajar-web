@@ -2,38 +2,40 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <!-- PWA -->
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#0066cc">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login — YuRa Personal Finance</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="login.css" />
+
+  <!-- Favicon & App Icons (pakai PNG agar aman di semua UA) -->
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Login — YuRa Personal Finance</title>
-  <link rel="stylesheet" href="login.css" />
-  <link rel="icon" href="assets/logo-yr.svg">
+  <!-- PWA / Manifest -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0066cc" />
+  <meta name="mobile-web-app-capable" content="yes" />
 </head>
 <body class="login-body">
   <main class="login-frame">
     <!-- Kiri: ilustrasi full-bleed -->
     <section class="login-left">
-      <img src="assets/login-illustration.png" alt="Ilustrasi YuRa" />
-      <img src="/assets/logo-yr.svg" alt="YuRa" width="96" height="96">
-      <img src="/assets/logo-yr.png" alt="YuRa" width="96" height="96">
+      <img src="/assets/login-illustration.png" alt="Ilustrasi YuRa" />
     </section>
 
     <!-- Kanan: panel login -->
     <section class="login-right">
       <div class="login-card">
         <header class="brand">
-          <img src="assets/logo-yr.png" alt="logo-yr" width="96" height="96">
+          <img src="/assets/logo-yr.png" alt="Logo YuRa" width="96" height="96">
           <div class="brand-text">
             <h1>YuRa <span>Personal Finance</span></h1>
             <p class="muted">Aplikasi Manajemen Keuangan Pribadi</p>
           </div>
         </header>
 
-        <!-- FORM (ID/struktur sesuai proyekmu) -->
+        <!-- FORM -->
         <form id="loginForm" autocomplete="off" class="login-form">
           <label for="username" class="field">
             <span>Username</span>
@@ -54,20 +56,25 @@
         </form>
 
         <footer class="foot">
-          <small>© <span id="year"></span> — Ranst Christian</small>
+          <small>© <span id="year"></span> — YuRa</small>
         </footer>
       </div>
     </section>
   </main>
 
+  <!-- Scripts -->
   <script src="login.js"></script>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js');
-    });
-  }
-</script>
+    // Tahun di footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Registrasi Service Worker (path absolut agar aktif dari /login.html juga)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .catch(err => console.warn('[SW] register failed', err));
+      });
+    }
+  </script>
 </body>
 </html>
