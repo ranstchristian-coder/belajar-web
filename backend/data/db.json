@@ -1,0 +1,12 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "username": "demo",
+      "fullname": "Pengguna Demo",
+      "passwordHash": "$2b$10$//P6cRduW6GjOpIkA/g9Tu.KtkgJtxEW28xslaaRgvwKdw4gqKusi",
+      "role": "user"
+    }
+  ],
+  "transactions": []
+}

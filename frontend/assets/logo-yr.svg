@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Gold gradients -->
+    <linearGradient id="gold1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#FFF2A6"/>
+      <stop offset="35%" stop-color="#FFD24D"/>
+      <stop offset="70%" stop-color="#F7A91A"/>
+      <stop offset="100%" stop-color="#D37E00"/>
+    </linearGradient>
+    <linearGradient id="gold2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE688"/>
+      <stop offset="50%" stop-color="#FFC02D"/>
+      <stop offset="100%" stop-color="#E39611"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="35%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".9"/>
+      <stop offset="40%" stop-color="#FFF2B0" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Red rope gradient -->
+    <linearGradient id="rope" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF3B3B"/>
+      <stop offset="100%" stop-color="#B50019"/>
+    </linearGradient>
+    <!-- Red emblem -->
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF3A2E"/>
+      <stop offset="100%" stop-color="#BD0019"/>
+    </linearGradient>
+    <!-- Inner shadow filter -->
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Pouch silhouette -->
+  <path d="M96,216 C92,184 144,148 176,132 C206,117 228,95 232,80 c4-15 44-18 52,0 c6,14 23,35 48,48
+           c40,20 76,56 76,88 c0,0 -2,24 -8,38 c-8,19 -12,22 -12,22
+           c26,28 40,64 40,98 c0,76 -84,112 -192,112 S44,470 44,394 c0-39 17-77 44-106 c0,0 -11-15 -16-36
+           c-3-12 -4-25 -4-36 z"
+        fill="url(#gold2)" filter="url(#softShadow)"/>
+
+  <!-- Upper gathered cloth -->
+  <path d="M112,218 c0-40 84-76 144-76 s144,36 144,76 c0,7-2,15-6,24 c-82,36-194,36-276,0 c-4-9-6-17-6-24 z"
+        fill="url(#gold1)"/>
+
+  <!-- Rope wrap -->
+  <path d="M84,254 c112,52 232,52 344,0 c6,16 8,24 8,24 c-126,60 -234,60 -360,0 c0,0 2-8 8-24 z"
+        fill="url(#rope)"/>
+  <!-- Rope knot -->
+  <circle cx="256" cy="252" r="18" fill="url(#red)"/>
+  <path d="M238,250 q18,18 36,0 q-18,10 -36,0 z" fill="#8C0012" opacity=".45"/>
+
+  <!-- Coins peeking out -->
+  <g transform="translate(0,-8)">
+    <ellipse cx="210" cy="168" rx="40" ry="22" fill="url(#gold1)"/>
+    <ellipse cx="256" cy="160" rx="44" ry="24" fill="url(#gold1)"/>
+    <ellipse cx="306" cy="170" rx="38" ry="20" fill="url(#gold1)"/>
+  </g>
+
+  <!-- Emblem circle -->
+  <circle cx="256" cy="372" r="92" fill="url(#gold1)"/>
+  <circle cx="256" cy="372" r="78" fill="white"/>
+  <circle cx="256" cy="372" r="72" fill="url(#red)"/>
+
+  <!-- Simplified prosperity glyph (geometric) -->
+  <path d="M244 318 h24 v18 h18 v24 h-18 v18 h18 v24 h-18 v18 h-24 v-18 h-18 v-24 h18 v-18 h-18 v-24 h18 z
+           M268 360 h-24 v24 h24 z"
+        fill="#FFD56A"/>
+
+  <!-- Highlight -->
+  <ellipse cx="190" cy="300" rx="120" ry="70" fill="url(#shine)" />
+
+  <!-- Subtle bottom shading -->
+  <ellipse cx="256" cy="492" rx="170" ry="18" fill="#000" opacity=".12"/>
+</svg>
