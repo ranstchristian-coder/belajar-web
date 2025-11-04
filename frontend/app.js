@@ -210,7 +210,7 @@ async function exportMonthlyXlsx(){
 /* =========================
    [CONFIG & STORAGE KEYS]
    ========================= */
-const API_BASE = ''; // offline
+const API_BASE = 'https://yura-api.onrender.com'; // ganti dgn URL backend kamu
 const STORAGE_KEY = 'yura-data-v2';
 const TRASH_KEY   = 'yura-trash-v1';
 
