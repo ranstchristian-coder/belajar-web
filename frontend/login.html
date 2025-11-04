@@ -2,6 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0066cc">
+  <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login — YuRa Personal Finance</title>
   <link rel="stylesheet" href="login.css" />
@@ -12,6 +18,8 @@
     <!-- Kiri: ilustrasi full-bleed -->
     <section class="login-left">
       <img src="assets/login-illustration.png" alt="Ilustrasi YuRa" />
+      <img src="/assets/logo-yr.svg" alt="YuRa" width="96" height="96">
+      <img src="/assets/logo-yr.png" alt="YuRa" width="96" height="96">
     </section>
 
     <!-- Kanan: panel login -->
@@ -54,5 +62,12 @@
 
   <script src="login.js"></script>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js');
+    });
+  }
+</script>
 </body>
 </html>
